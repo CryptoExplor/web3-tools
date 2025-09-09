@@ -1,1 +1,603 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nonce Checker - Web3 Tools</title>
+    <!-- Inter font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 1280px;
+        }
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+        .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .hidden {
+            display: none;
+        }
+        .disabled-button {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        /* Custom message box styling */
+        .message-box {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            max-width: 300px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 1000;
+            animation: fadeInOut 5s forwards;
+        }
+        .message-box.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .message-box.info {
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        /* Style for the active networks list */
+        .network-tag {
+            background-color: #eef2ff;
+            color: #4f46e5;
+            border: 1px solid #c7d2fe;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dark .network-tag {
+             background-color: #433e56;
+             color: #c4b5fd;
+             border-color: #6d649f;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="#" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                        <span class="text-xl font-bold">Web3 Tools</span>
+                    </a>
+                    <nav class="hidden md:flex items-center space-x-2 text-sm">
+                        <span class="text-gray-400">/</span>
+                        <span class="text-indigo-600 dark:text-indigo-400">Nonce Checker</span>
+                    </nav>
+                </div>
+                <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle theme">
+                    <svg class="w-6 h-6 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg class="w-6 h-6 block dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
 
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-bold mb-6">Nonce Checker</h1>
+            
+            <!-- Configuration Panel -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">Configuration</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <!-- Network / RPC URL Input -->
+                    <div>
+                        <label for="rpc-url-input" class="block text-sm font-medium mb-2">Network / RPC URL</label>
+                        <div class="flex space-x-2">
+                            <input 
+                                list="rpc-urls" 
+                                id="rpc-url-input" 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Select a network or type to add a custom RPC"
+                            >
+                            <datalist id="rpc-urls">
+                                <option value="https://rpc.ankr.com/eth">Ethereum Mainnet (ankr)</option>
+                                <option value="https://rpc.ankr.com/celo">Celo Mainnet (ankr)</option>
+                                <option value="https://rpc.ankr.com/polygon">Polygon Mainnet (ankr)</option>
+                                <option value="https://rpc.ankr.com/avalanche">Avalanche C-Chain (ankr)</option>
+                            </datalist>
+                            <button onclick="addNetworkFromInput()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Add</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Network Search from Chainlist.org -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <label for="network-search" class="block text-sm font-medium">Search Network (Chainlist.org)</label>
+                            <div id="search-spinner" class="animate-spin h-4 w-4 text-indigo-600 hidden">
+                                <svg class="w-full h-full" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <input 
+                                type="text" 
+                                id="network-search" 
+                                placeholder="e.g., Optimism, Base"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                            <button 
+                                onclick="searchAndAddNetwork()" 
+                                id="search-btn"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                            >
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Networks List -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Networks to Check</label>
+                    <div id="active-networks-list" class="flex flex-wrap gap-2">
+                        <!-- Network tags will be dynamically added here -->
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                          No networks added yet.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Addresses Input Area -->
+                <div id="address-input" class="mb-4">
+                    <label for="addresses" class="block text-sm font-medium mb-2">
+                        Addresses (one per line)
+                        <button onclick="loadSampleAddresses()" class="ml-2 text-xs text-indigo-600 hover:text-indigo-700">Load Sample</button>
+                    </label>
+                    <textarea 
+                        id="addresses" 
+                        rows="4"
+                        placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb9&#10;0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed&#10;..."
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+                    ></textarea>
+                </div>
+
+                <!-- File Upload -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Upload File (optional)</label>
+                    <input 
+                        type="file" 
+                        id="file-upload" 
+                        accept=".txt,.csv"
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900 dark:file:text-indigo-300"
+                    >
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-4">
+                    <button 
+                        onclick="connectWallet()" 
+                        id="connect-btn"
+                        class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 9v8m-4-8h4m-4 0a4 4 0 00-4 4v4a4 4 0 004 4m14-8v8m-4-8h4m-4 0a4 4 0 014 4v4a4 4 0 01-4 4"/>
+                        </svg>
+                        Connect Wallet
+                    </button>
+                    <button 
+                        onclick="checkNonces()" 
+                        id="check-btn"
+                        class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Check Nonces
+                    </button>
+                    <button 
+                        onclick="exportCSV()"
+                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Table -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Results</h2>
+                    <span id="total-nonce-display" class="font-bold text-lg text-indigo-600">Total Nonce: 0</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <th class="text-left py-3 px-4">Address</th>
+                                <th class="text-left py-3 px-4">Network</th>
+                                <th class="text-left py-3 px-4">Nonce</th>
+                                <th class="text-left py-3 px-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody">
+                            <tr>
+                                <td colspan="4" class="text-center py-8 text-gray-500">
+                                    No data yet. Enter addresses and networks to begin.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12 py-8">
+        <div class="container mx-auto px-4">
+            <div class="text-center text-sm text-gray-600 dark:text-gray-400">
+                <p>© 2025 Web3 Tools. All operations run locally in your browser.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Store nonces for CSV export
+        let lastNonces = [];
+        let activeNetworks = [
+            { name: "Ethereum", rpc: "https://rpc.ankr.com/eth" },
+            { name: "Polygon", rpc: "https://rpc.ankr.com/polygon" },
+            { name: "Celo", rpc: "https://rpc.ankr.com/celo" },
+        ];
+
+        const totalNonceDisplay = document.getElementById('total-nonce-display');
+        const checkBtn = document.getElementById('check-btn');
+        const searchBtn = document.getElementById('search-btn');
+        const searchSpinner = document.getElementById('search-spinner');
+        const activeNetworksList = document.getElementById('active-networks-list');
+        const addressesTextarea = document.getElementById('addresses');
+        const fileUploadInput = document.getElementById('file-upload');
+
+        // Initial render of active networks
+        function renderActiveNetworks() {
+            if (activeNetworks.length === 0) {
+                activeNetworksList.innerHTML = `<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                    No networks added yet.
+                </span>`;
+                return;
+            }
+
+            activeNetworksList.innerHTML = '';
+            activeNetworks.forEach(net => {
+                const tag = document.createElement('span');
+                tag.className = 'network-tag rounded-full px-2.5 py-0.5 text-sm font-medium';
+                tag.innerHTML = `
+                    <span>${net.name}</span>
+                    <button class="text-indigo-400 hover:text-indigo-600" onclick="removeNetwork('${net.rpc}')">&times;</button>
+                `;
+                activeNetworksList.appendChild(tag);
+            });
+        }
+        renderActiveNetworks();
+
+        // Function to add a network to the list
+        function addNetwork(name, rpc) {
+            const existingNetwork = activeNetworks.find(net => net.rpc === rpc);
+            if (!existingNetwork) {
+                activeNetworks.push({ name, rpc });
+                renderActiveNetworks();
+                showMessage(`Added network: ${name}`, 'success');
+            } else {
+                showMessage(`Network ${name} is already in the list.`, 'info');
+            }
+        }
+
+        // Function to remove a network from the list
+        function removeNetwork(rpc) {
+            activeNetworks = activeNetworks.filter(net => net.rpc !== rpc);
+            renderActiveNetworks();
+            showMessage('Network removed.', 'info');
+        }
+
+        // Add network from input
+        function addNetworkFromInput() {
+            const rpcUrlInput = document.getElementById('rpc-url-input');
+            const rpcUrl = rpcUrlInput.value;
+            if (!rpcUrl) {
+                showMessage("Please enter a valid RPC URL.", 'error');
+                return;
+            }
+            // A simple way to get a name if it's not from the datalist
+            const name = rpcUrl.split('/')[2]; 
+            addNetwork(name, rpcUrl);
+            rpcUrlInput.value = '';
+        }
+
+        // Load sample addresses
+        function loadSampleAddresses() {
+            const sampleAddresses = `0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb9\n0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed`;
+            addressesTextarea.value = sampleAddresses;
+        }
+
+        // Connect wallet
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showMessage("Please install a wallet like MetaMask to connect.", 'error');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const address = accounts[0];
+                showMessage(`Connected to wallet: ${address}`, 'success');
+                const existingAddresses = addressesTextarea.value.split('\n').map(addr => addr.trim());
+                if (!existingAddresses.includes(address)) {
+                    addressesTextarea.value = `${addressesTextarea.value}\n${address}`.trim();
+                }
+            } catch (error) {
+                showMessage(`Failed to connect wallet: ${error.message}`, 'error');
+            }
+        }
+
+        // Search networks from Chainlist.org and populate datalist
+        async function searchAndAddNetwork() {
+            const query = document.getElementById('network-search').value.toLowerCase();
+            if (!query) return;
+
+            searchBtn.disabled = true;
+            searchBtn.classList.add('disabled-button');
+            searchSpinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch('https://chainid.network/chains.json');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const chains = await response.json();
+                
+                let found = false;
+                chains.forEach(chain => {
+                    const rpcUrl = chain.rpc[0];
+                    if (rpcUrl && (chain.name.toLowerCase().includes(query) || (chain.shortName && chain.shortName.toLowerCase().includes(query)))) {
+                        addNetwork(chain.name, rpcUrl);
+                        found = true;
+                    }
+                });
+
+                if (found) {
+                    showMessage(`Found and added networks for "${query}".`, 'success');
+                } else {
+                    showMessage(`No networks found for "${query}".`, 'info');
+                }
+
+            } catch (error) {
+                showMessage(`Failed to fetch networks: ${error.message}`, 'error');
+                console.error('Failed to fetch Chainlist data:', error);
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.classList.remove('disabled-button');
+                searchSpinner.classList.add('hidden');
+            }
+        }
+
+        // Main function to check nonces
+        async function checkNonces() {
+            checkBtn.disabled = true;
+            checkBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Checking...
+            `;
+            
+            const addresses = addressesTextarea.value.split('\n').map(addr => addr.trim()).filter(addr => ethers.utils.isAddress(addr));
+
+            if (addresses.length === 0) {
+                showMessage('Please enter at least one valid address.', 'error');
+                resetCheckButton();
+                return;
+            }
+            if (activeNetworks.length === 0) {
+                showMessage('Please add at least one network to check.', 'error');
+                resetCheckButton();
+                return;
+            }
+
+            const resultsBody = document.getElementById('results-tbody');
+            resultsBody.innerHTML = '';
+            lastNonces = [];
+            totalNonceDisplay.textContent = 'Total Nonce: 0';
+
+            const checkPromises = [];
+            let totalNonceSum = 0;
+
+            for (const net of activeNetworks) {
+                const provider = new ethers.providers.JsonRpcProvider(net.rpc);
+
+                for (const address of addresses) {
+                    checkPromises.push(
+                        provider.getTransactionCount(address, "pending")
+                            .then(nonce => {
+                                // Add result to the global array
+                                lastNonces.push({ address, chain: net.name, nonce });
+                                updateTable(address, net.name, nonce, 'OK');
+                                totalNonceSum += nonce;
+                            })
+                            .catch(error => {
+                                updateTable(address, net.name, 'Error', 'RPC Fail');
+                                console.error(`Error fetching nonce for ${address} on ${net.name}:`, error);
+                            })
+                    );
+                }
+            }
+
+            await Promise.all(checkPromises);
+
+            totalNonceDisplay.textContent = `Total Nonce: ${totalNonceSum}`;
+            resetCheckButton();
+        }
+
+        // Helper to update or add a row in the results table
+        function updateTable(address, chain, nonce, status) {
+            const resultsBody = document.getElementById('results-tbody');
+            
+            let rowId = `${address}-${chain}`.replace(/[^a-zA-Z0-9-]/g, '');
+            let row = document.getElementById(rowId);
+
+            if (!row) {
+                row = document.createElement('tr');
+                row.id = rowId;
+                row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
+                row.innerHTML = `
+                    <td class="py-3 px-4 font-mono text-xs truncate max-w-xs">${address}</td>
+                    <td class="py-3 px-4">${chain}</td>
+                    <td class="py-3 px-4 nonce-cell">${nonce}</td>
+                    <td class="py-3 px-4 status-cell"></td>
+                `;
+                resultsBody.appendChild(row);
+            } else {
+                row.querySelector('.nonce-cell').textContent = nonce;
+            }
+            
+            const statusCell = row.querySelector('.status-cell');
+            if (status === 'OK') {
+                statusCell.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                    <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"></circle></svg>
+                    OK
+                </span>`;
+            } else {
+                statusCell.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300">
+                    <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-red-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"></circle></svg>
+                    Error
+                </span>`;
+            }
+        }
+
+        // Reset the check button state
+        function resetCheckButton() {
+            checkBtn.disabled = false;
+            checkBtn.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Check Nonces
+            `;
+        }
+
+        // Export to CSV file
+        function exportCSV() {
+            if (lastNonces.length === 0) {
+                showMessage('No data to export. Please check nonces first.', 'info');
+                return;
+            }
+            
+            const data = [['wallet_address', 'chain', 'nonce']];
+            for (const entry of lastNonces) {
+                data.push([entry.address, entry.chain, entry.nonce]);
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            data.forEach(row => {
+                csvContent += row.join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            const date = new Date().toISOString().slice(0, 10);
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `nonce_export_${date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Show a message in a dismissible box
+        function showMessage(message, type) {
+            const messageBox = document.createElement('div');
+            messageBox.className = `message-box ${type}`;
+            messageBox.textContent = message;
+            document.body.appendChild(messageBox);
+
+            setTimeout(() => {
+                messageBox.remove();
+            }, 5000);
+        }
+
+        // File upload handling
+        fileUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                const addressesFromFile = content.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => ethers.utils.isAddress(line));
+                
+                if (addressesFromFile.length > 0) {
+                    addressesTextarea.value = addressesFromFile.join('\n');
+                    showMessage(`Loaded ${addressesFromFile.length} addresses from file.`, 'success');
+                } else {
+                    showMessage('No valid addresses found in the file.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Theme toggle logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const root = document.documentElement;
+
+        // Set initial theme based on user preference or local storage
+        const isSystemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && isSystemDark)) {
+            root.classList.add('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            root.classList.toggle('dark');
+            if (root.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    </script>
+</body>
+</html>
