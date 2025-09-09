@@ -126,9 +126,9 @@
                                 placeholder="Select a network or type to add a custom RPC"
                             >
                             <datalist id="rpc-urls">
-                                <option value="https://rpc.ankr.com/eth">Ethereum Mainnet (ankr)</option>
-                                <option value="https://forno.celo.org">Celo Mainnet (ankr)</option>
-                                <option value="https://polygon-rpc.com">Polygon Mainnet (ankr)</option>
+                                <option value="https://eth.llamarpc.com">Ethereum Mainnet (llamarpc)</option>
+                                <option value="https://polygon-rpc.com">Polygon Mainnet (polygon-rpc)</option>
+                                <option value="https://forno.celo.org">Celo Mainnet (forno)</option>
                                 <option value="https://rpc.ankr.com/avalanche">Avalanche C-Chain (ankr)</option>
                             </datalist>
                             <button onclick="addNetworkFromInput()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Add</button>
@@ -277,9 +277,9 @@
         // Store nonces for CSV export
         let lastNonces = [];
         let activeNetworks = [
-            { name: "Ethereum", rpc: "https://rpc.ankr.com/eth" },
-            { name: "Polygon", rpc: "https://rpc.ankr.com/polygon" },
-            { name: "Celo", rpc: "https://rpc.ankr.com/celo" },
+            { name: "Ethereum", rpc: "https://eth.llamarpc.com" },
+            { name: "Polygon", rpc: "https://polygon-rpc.com" },
+            { name: "Celo", rpc: "https://forno.celo.org" },
         ];
 
         const totalNonceDisplay = document.getElementById('total-nonce-display');
@@ -441,30 +441,24 @@
             lastNonces = [];
             totalNonceDisplay.textContent = 'Total Nonce: 0';
 
-            const checkPromises = [];
             let totalNonceSum = 0;
 
             for (const net of activeNetworks) {
                 const provider = new ethers.providers.JsonRpcProvider(net.rpc);
 
                 for (const address of addresses) {
-                    checkPromises.push(
-                        provider.getTransactionCount(address, "pending")
-                            .then(nonce => {
-                                // Add result to the global array
-                                lastNonces.push({ address, chain: net.name, nonce });
-                                updateTable(address, net.name, nonce, 'OK');
-                                totalNonceSum += nonce;
-                            })
-                            .catch(error => {
-                                updateTable(address, net.name, 'Error', 'RPC Fail');
-                                console.error(`Error fetching nonce for ${address} on ${net.name}:`, error);
-                            })
-                    );
+                    try {
+                        const nonce = await provider.getTransactionCount(address, "pending");
+                        // Add result to the global array
+                        lastNonces.push({ address, chain: net.name, nonce });
+                        updateTable(address, net.name, nonce, 'OK');
+                        totalNonceSum += nonce;
+                    } catch (error) {
+                        updateTable(address, net.name, 'Error', 'RPC Fail');
+                        console.error(`Error fetching nonce for ${address} on ${net.name}:`, error);
+                    }
                 }
             }
-
-            await Promise.all(checkPromises);
 
             totalNonceDisplay.textContent = `Total Nonce: ${totalNonceSum}`;
             resetCheckButton();
