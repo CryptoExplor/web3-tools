@@ -21,7 +21,7 @@
             border-radius: 0.5rem;
         }
         .shadow-md {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1-px rgba(0, 0, 0, 0.06);
         }
         .hidden {
             display: none;
@@ -281,6 +281,7 @@
             { name: "Polygon", rpc: "https://polygon-rpc.com" },
             { name: "Celo", rpc: "https://forno.celo.org" },
         ];
+        const TIMEOUT_DURATION = 10000; // 10 seconds
 
         const totalNonceDisplay = document.getElementById('total-nonce-display');
         const checkBtn = document.getElementById('check-btn');
@@ -447,8 +448,13 @@
                 const provider = new ethers.providers.JsonRpcProvider(net.rpc);
 
                 for (const address of addresses) {
+                    const timeoutPromise = new Promise((resolve, reject) => {
+                        setTimeout(() => reject(new Error('Request timed out')), TIMEOUT_DURATION);
+                    });
+
                     try {
-                        const nonce = await provider.getTransactionCount(address, "pending");
+                        const noncePromise = provider.getTransactionCount(address, "pending");
+                        const nonce = await Promise.race([noncePromise, timeoutPromise]);
                         // Add result to the global array
                         lastNonces.push({ address, chain: net.name, nonce });
                         updateTable(address, net.name, nonce, 'OK');
